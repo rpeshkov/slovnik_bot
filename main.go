@@ -5,6 +5,8 @@ import (
 
 	"os"
 
+	"github.com/rpeshkov/slovnik_bot/slovnik"
+
 	"gopkg.in/telegram-bot-api.v4"
 )
 
@@ -31,9 +33,9 @@ func main() {
 
 		messageText := ""
 
-		w, err := GetTranslations(update.Message.Text)
+		w, err := slovnik.GetTranslations(update.Message.Text)
 
-		if err != nil || len(w.word) <= 0 {
+		if err != nil || len(w.Word) <= 0 {
 			messageText = "Specified word not found :("
 		} else {
 			messageText = w.String()
