@@ -33,7 +33,10 @@ func main() {
 
 		messageText := ""
 
-		w, err := slovnik.GetTranslations(update.Message.Text)
+		lang := slovnik.DetectLanguage(update.Message.Text)
+		log.Println(lang)
+
+		w, err := slovnik.GetTranslations(update.Message.Text, lang)
 
 		if err != nil || len(w.Word) <= 0 {
 			messageText = "Specified word not found :("

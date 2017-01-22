@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"strings"
+
+	"log"
 
 	"golang.org/x/net/html"
 )
@@ -22,9 +25,22 @@ func (w Word) String() string {
 }
 
 // GetTranslations from slovnik.seznam.cz for specified word
-func GetTranslations(word string) (Word, error) {
-	url := fmt.Sprintf("https://slovnik.seznam.cz/cz-ru/?q=%s", word)
-	resp, err := http.Get(url)
+func GetTranslations(word string, langcode string) (Word, error) {
+	urls := map[string]string{
+		"cs": "https://slovnik.seznam.cz/cz-ru/",
+		"ru": "https://slovnik.seznam.cz/ru/",
+	}
+
+	query, _ := url.Parse(urls[langcode])
+
+	p := url.Values{}
+	p.Add("q", word)
+
+	query.RawQuery = p.Encode()
+
+	log.Println(query.String())
+
+	resp, err := http.Get(query.String())
 	if err != nil {
 		return Word{}, err
 	}
@@ -62,7 +78,7 @@ func parsePage(pageBody io.Reader) Word {
 
 			if t.Data == "h3" {
 				for _, attr := range t.Attr {
-					if attr.Key == "lang" && attr.Val == "cs" {
+					if attr.Key == "lang" && (attr.Val == "cs" || attr.Val == "ru") {
 						inWord = true
 					}
 				}
