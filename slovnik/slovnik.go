@@ -71,6 +71,10 @@ func parsePage(pageBody io.Reader) Word {
 	inSynonymsBlock := false
 	inSynonima := false
 
+	foundAntonymsHeader := false
+	inAntonymsBlock := false
+	inAntonima := false
+
 	w := Word{}
 	for {
 		tt := z.Next()
@@ -96,6 +100,8 @@ func parsePage(pageBody io.Reader) Word {
 						inTranslations = true
 					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundSynonymsHeader {
 						inSynonymsBlock = true
+					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundAntonymsHeader {
+						inAntonymsBlock = true
 					}
 				}
 			}
@@ -106,6 +112,10 @@ func parsePage(pageBody io.Reader) Word {
 
 			if t.Data == "a" && inSynonymsBlock {
 				inSynonima = true
+			}
+
+			if t.Data == "a" && inAntonymsBlock {
+				inAntonima = true
 			}
 
 			if t.Data == "span" {
@@ -133,6 +143,9 @@ func parsePage(pageBody io.Reader) Word {
 			if t.Data == "a" && inSynonima {
 				inSynonima = false
 			}
+			if t.Data == "a" && inAntonima {
+				inAntonima = false
+			}
 			if t.Data == "span" && inMorf {
 				inMorf = false
 			}
@@ -140,6 +153,11 @@ func parsePage(pageBody io.Reader) Word {
 			if t.Data == "div" && inSynonymsBlock {
 				inSynonymsBlock = false
 				foundSynonymsHeader = false
+			}
+
+			if t.Data == "div" && inAntonymsBlock {
+				inAntonymsBlock = false
+				foundAntonymsHeader = false
 			}
 
 			break
@@ -161,8 +179,16 @@ func parsePage(pageBody io.Reader) Word {
 				foundSynonymsHeader = true
 			}
 
+			if t.Data == "Antonyma" {
+				foundAntonymsHeader = true
+			}
+
 			if inSynonima {
 				w.Synonyms = append(w.Synonyms, t.Data)
+			}
+
+			if inAntonima {
+				w.Antonyms = append(w.Antonyms, t.Data)
 			}
 			break
 		}

@@ -63,4 +63,20 @@ func TestParsePage(t *testing.T) {
 			}
 		}
 	}
+
+	expectedAntonyms := []string{
+		"vedlejší",
+		"podřadný",
+		"podružný",
+	}
+
+	if len(w.Antonyms) != len(expectedAntonyms) {
+		t.Errorf("ParsePage len(antonyms) == %d, want %d", len(w.Antonyms), len(expectedAntonyms))
+
+		for i, antonym := range w.Antonyms {
+			if antonym != expectedAntonyms[i] {
+				t.Errorf("ParsePage antonym == %q, want %q", antonym, expectedAntonyms[i])
+			}
+		}
+	}
 }
