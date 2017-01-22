@@ -67,6 +67,10 @@ func parsePage(pageBody io.Reader) Word {
 	// class of span that contains wordtype
 	inMorf := false
 
+	foundSynonymsHeader := false
+	inSynonymsBlock := false
+	inSynonima := false
+
 	w := Word{}
 	for {
 		tt := z.Next()
@@ -90,12 +94,18 @@ func parsePage(pageBody io.Reader) Word {
 				for _, attr := range t.Attr {
 					if attr.Key == "id" && attr.Val == "fastMeanings" {
 						inTranslations = true
+					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundSynonymsHeader {
+						inSynonymsBlock = true
 					}
 				}
 			}
 
 			if t.Data == "a" && inTranslations {
 				inTranslationLink = true
+			}
+
+			if t.Data == "a" && inSynonymsBlock {
+				inSynonima = true
 			}
 
 			if t.Data == "span" {
@@ -120,8 +130,16 @@ func parsePage(pageBody io.Reader) Word {
 			if t.Data == "a" && inTranslationLink {
 				inTranslationLink = false
 			}
+			if t.Data == "a" && inSynonima {
+				inSynonima = false
+			}
 			if t.Data == "span" && inMorf {
 				inMorf = false
+			}
+
+			if t.Data == "div" && inSynonymsBlock {
+				inSynonymsBlock = false
+				foundSynonymsHeader = false
 			}
 
 			break
@@ -137,6 +155,14 @@ func parsePage(pageBody io.Reader) Word {
 
 			if inMorf {
 				w.WordType = t.Data
+			}
+
+			if t.Data == "Synonyma" {
+				foundSynonymsHeader = true
+			}
+
+			if inSynonima {
+				w.Synonyms = append(w.Synonyms, t.Data)
 			}
 			break
 		}

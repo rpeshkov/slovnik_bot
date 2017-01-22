@@ -25,16 +25,15 @@ func TestParsePage(t *testing.T) {
 	w := parsePage(f)
 
 	const expectedWord = "hlavní"
+
+	if w.Word != expectedWord {
+		t.Errorf("ParsePage word == %q, want %q", w.Word, expectedWord)
+	}
+
 	expectedTranslations := []string{
 		"гла́вный",
 		"основно́й",
 		"центра́льный",
-	}
-
-	const expectedWordType = "přídavné jméno"
-
-	if w.Word != expectedWord {
-		t.Errorf("ParsePage word == %q, want %q", w.Word, expectedWord)
 	}
 
 	for i, trans := range w.Translations {
@@ -43,7 +42,19 @@ func TestParsePage(t *testing.T) {
 		}
 	}
 
+	const expectedWordType = "přídavné jméno"
 	if w.WordType != expectedWordType {
 		t.Errorf("ParsePage wordType == %q, want %q", w.WordType, expectedWordType)
+	}
+
+	expectedSynonyms := []string{
+		"ústřední",
+		"podstatný",
+		"základní",
+		"zásadní",
+	}
+
+	if len(w.Synonyms) != len(expectedSynonyms) {
+		t.Errorf("ParsePage len(synonyms) == %d, want %d", len(w.Synonyms), len(expectedSynonyms))
 	}
 }
