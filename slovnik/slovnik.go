@@ -15,6 +15,9 @@ import (
 type Word struct {
 	Word         string
 	Translations []string
+	WordType     string
+	Synonyms     []string
+	Antonyms     []string
 }
 
 // Method for transforming Word struct to string
@@ -61,6 +64,9 @@ func parsePage(pageBody io.Reader) Word {
 	inTranslations := false
 	inTranslationLink := false
 
+	// class of span that contains wordtype
+	inMorf := false
+
 	w := Word{}
 	for {
 		tt := z.Next()
@@ -92,6 +98,14 @@ func parsePage(pageBody io.Reader) Word {
 				inTranslationLink = true
 			}
 
+			if t.Data == "span" {
+				for _, attr := range t.Attr {
+					if attr.Key == "class" && attr.Val == "morf" {
+						inMorf = true
+					}
+				}
+			}
+
 			break
 
 		case tt == html.EndTagToken:
@@ -106,6 +120,9 @@ func parsePage(pageBody io.Reader) Word {
 			if t.Data == "a" && inTranslationLink {
 				inTranslationLink = false
 			}
+			if t.Data == "span" && inMorf {
+				inMorf = false
+			}
 
 			break
 
@@ -116,6 +133,10 @@ func parsePage(pageBody io.Reader) Word {
 			}
 			if inTranslationLink {
 				w.Translations = append(w.Translations, t.Data)
+			}
+
+			if inMorf {
+				w.WordType = t.Data
 			}
 			break
 		}

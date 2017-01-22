@@ -31,6 +31,8 @@ func TestParsePage(t *testing.T) {
 		"центра́льный",
 	}
 
+	const expectedWordType = "přídavné jméno"
+
 	if w.Word != expectedWord {
 		t.Errorf("ParsePage word == %q, want %q", w.Word, expectedWord)
 	}
@@ -39,5 +41,9 @@ func TestParsePage(t *testing.T) {
 		if trans != expectedTranslations[i] {
 			t.Errorf("ParsePage translation == %q, want %q", trans, expectedTranslations[i])
 		}
+	}
+
+	if w.WordType != expectedWordType {
+		t.Errorf("ParsePage wordType == %q, want %q", w.WordType, expectedWordType)
 	}
 }
