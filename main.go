@@ -19,7 +19,6 @@ func main() {
 	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	// инициализируем канал, куда будут прилетать обновления от API
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
@@ -46,7 +45,7 @@ func main() {
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
 
-		msg.ParseMode = "markdown"
+		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.ReplyToMessageID = update.Message.MessageID
 
 		bot.Send(msg)
