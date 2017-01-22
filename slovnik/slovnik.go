@@ -1,34 +1,61 @@
-package main
+package slovnik
 
 import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"strings"
+
+	"log"
 
 	"golang.org/x/net/html"
 )
 
 // Word defines a structure with the word itself and possible translations of that word
 type Word struct {
-	word         string
-	translations []string
+	Word         string
+	Translations []string
 }
 
 // Method for transforming Word struct to string
 func (w Word) String() string {
-	return fmt.Sprintf("*%s*\n%s", w.word, strings.Join(w.translations, ", "))
+	return fmt.Sprintf("*%s*\n%s", w.Word, strings.Join(w.Translations, ", "))
 }
 
 // GetTranslations from slovnik.seznam.cz for specified word
-func GetTranslations(word string) (Word, error) {
-	url := fmt.Sprintf("https://slovnik.seznam.cz/cz-ru/?q=%s", word)
-	resp, err := http.Get(url)
+func GetTranslations(word string, langcode string) (Word, error) {
+	urls := map[string]string{
+		"cs": "https://slovnik.seznam.cz/cz-ru/",
+		"ru": "https://slovnik.seznam.cz/ru/",
+	}
+
+	query, _ := url.Parse(urls[langcode])
+
+	p := url.Values{}
+	p.Add("q", word)
+
+	query.RawQuery = p.Encode()
+
+	log.Println(query.String())
+
+	resp, err := http.Get(query.String())
 	if err != nil {
 		return Word{}, err
 	}
 	return parsePage(resp.Body), nil
+}
+
+// DetectLanguage used to find out which language is used for the input string
+func DetectLanguage(input string) string {
+	const ru = "абвгдеёжзийклмнопрстуфхцчшщьыъэюя"
+	for _, ch := range input {
+		if strings.Contains(ru, strings.ToLower(string(ch))) {
+			return "ru"
+		}
+	}
+	return "cs"
 }
 
 func parsePage(pageBody io.Reader) Word {
@@ -51,7 +78,7 @@ func parsePage(pageBody io.Reader) Word {
 
 			if t.Data == "h3" {
 				for _, attr := range t.Attr {
-					if attr.Key == "lang" && attr.Val == "cs" {
+					if attr.Key == "lang" && (attr.Val == "cs" || attr.Val == "ru") {
 						inWord = true
 					}
 				}
@@ -89,10 +116,10 @@ func parsePage(pageBody io.Reader) Word {
 		case tt == html.TextToken:
 			t := z.Token()
 			if inWord {
-				w.word = t.Data
+				w.Word = t.Data
 			}
 			if inTranslationLink {
-				w.translations = append(w.translations, t.Data)
+				w.Translations = append(w.Translations, t.Data)
 			}
 			break
 		}
