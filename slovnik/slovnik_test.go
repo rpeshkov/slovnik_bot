@@ -56,5 +56,11 @@ func TestParsePage(t *testing.T) {
 
 	if len(w.Synonyms) != len(expectedSynonyms) {
 		t.Errorf("ParsePage len(synonyms) == %d, want %d", len(w.Synonyms), len(expectedSynonyms))
+
+		for i, synonym := range w.Synonyms {
+			if synonym != expectedSynonyms[i] {
+				t.Errorf("ParsePage synonym == %q, want %q", synonym, expectedSynonyms[i])
+			}
+		}
 	}
 }
