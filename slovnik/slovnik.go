@@ -8,8 +8,6 @@ import (
 
 	"strings"
 
-	"log"
-
 	"golang.org/x/net/html"
 )
 
@@ -37,8 +35,6 @@ func GetTranslations(word string, langcode string) (Word, error) {
 	p.Add("q", word)
 
 	query.RawQuery = p.Encode()
-
-	log.Println(query.String())
 
 	resp, err := http.Get(query.String())
 	if err != nil {

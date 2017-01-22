@@ -33,7 +33,6 @@ func main() {
 		messageText := ""
 
 		lang := slovnik.DetectLanguage(update.Message.Text)
-		log.Println(lang)
 
 		w, err := slovnik.GetTranslations(update.Message.Text, lang)
 
