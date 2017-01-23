@@ -15,11 +15,24 @@ import (
 type Word struct {
 	Word         string
 	Translations []string
+	WordType     string
+	Synonyms     []string
+	Antonyms     []string
 }
 
 // Method for transforming Word struct to string
 func (w Word) String() string {
-	return fmt.Sprintf("*%s*\n%s", w.Word, strings.Join(w.Translations, ", "))
+	out := fmt.Sprintf("*%s*\n", w.WordType)
+	out += fmt.Sprintln(strings.Join(w.Translations, ", "))
+	if len(w.Synonyms) > 0 {
+		out += fmt.Sprintln("\n*Synonyms:*")
+		out += fmt.Sprintln(strings.Join(w.Synonyms, ", "))
+	}
+	if len(w.Antonyms) > 0 {
+		out += fmt.Sprintln("\n*Antonyms:*")
+		out += fmt.Sprintln(strings.Join(w.Antonyms, ", "))
+	}
+	return out
 }
 
 // GetTranslations from slovnik.seznam.cz for specified word
@@ -33,6 +46,7 @@ func GetTranslations(word string, langcode string) (Word, error) {
 
 	p := url.Values{}
 	p.Add("q", word)
+	p.Add("shortView", "0")
 
 	query.RawQuery = p.Encode()
 
@@ -61,6 +75,17 @@ func parsePage(pageBody io.Reader) Word {
 	inTranslations := false
 	inTranslationLink := false
 
+	// class of span that contains wordtype
+	inMorf := false
+
+	foundSynonymsHeader := false
+	inSynonymsBlock := false
+	inSynonima := false
+
+	foundAntonymsHeader := false
+	inAntonymsBlock := false
+	inAntonima := false
+
 	w := Word{}
 	for {
 		tt := z.Next()
@@ -84,12 +109,32 @@ func parsePage(pageBody io.Reader) Word {
 				for _, attr := range t.Attr {
 					if attr.Key == "id" && attr.Val == "fastMeanings" {
 						inTranslations = true
+					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundSynonymsHeader {
+						inSynonymsBlock = true
+					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundAntonymsHeader {
+						inAntonymsBlock = true
 					}
 				}
 			}
 
 			if t.Data == "a" && inTranslations {
 				inTranslationLink = true
+			}
+
+			if t.Data == "a" && inSynonymsBlock {
+				inSynonima = true
+			}
+
+			if t.Data == "a" && inAntonymsBlock {
+				inAntonima = true
+			}
+
+			if t.Data == "span" {
+				for _, attr := range t.Attr {
+					if attr.Key == "class" && attr.Val == "morf" {
+						inMorf = true
+					}
+				}
 			}
 
 			break
@@ -106,6 +151,25 @@ func parsePage(pageBody io.Reader) Word {
 			if t.Data == "a" && inTranslationLink {
 				inTranslationLink = false
 			}
+			if t.Data == "a" && inSynonima {
+				inSynonima = false
+			}
+			if t.Data == "a" && inAntonima {
+				inAntonima = false
+			}
+			if t.Data == "span" && inMorf {
+				inMorf = false
+			}
+
+			if t.Data == "div" && inSynonymsBlock {
+				inSynonymsBlock = false
+				foundSynonymsHeader = false
+			}
+
+			if t.Data == "div" && inAntonymsBlock {
+				inAntonymsBlock = false
+				foundAntonymsHeader = false
+			}
 
 			break
 
@@ -116,6 +180,26 @@ func parsePage(pageBody io.Reader) Word {
 			}
 			if inTranslationLink {
 				w.Translations = append(w.Translations, t.Data)
+			}
+
+			if inMorf {
+				w.WordType = t.Data
+			}
+
+			if t.Data == "Synonyma" {
+				foundSynonymsHeader = true
+			}
+
+			if t.Data == "Antonyma" {
+				foundAntonymsHeader = true
+			}
+
+			if inSynonima {
+				w.Synonyms = append(w.Synonyms, t.Data)
+			}
+
+			if inAntonima {
+				w.Antonyms = append(w.Antonyms, t.Data)
 			}
 			break
 		}
