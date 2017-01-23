@@ -22,7 +22,17 @@ type Word struct {
 
 // Method for transforming Word struct to string
 func (w Word) String() string {
-	return fmt.Sprintf("*%s*\n%s", w.Word, strings.Join(w.Translations, ", "))
+	out := fmt.Sprintf("*%s*\n", w.WordType)
+	out += fmt.Sprintln(strings.Join(w.Translations, ", "))
+	if len(w.Synonyms) > 0 {
+		out += fmt.Sprintln("\n*Synonyms:*")
+		out += fmt.Sprintln(strings.Join(w.Synonyms, ", "))
+	}
+	if len(w.Antonyms) > 0 {
+		out += fmt.Sprintln("\n*Antonyms:*")
+		out += fmt.Sprintln(strings.Join(w.Antonyms, ", "))
+	}
+	return out
 }
 
 // GetTranslations from slovnik.seznam.cz for specified word
@@ -36,6 +46,7 @@ func GetTranslations(word string, langcode string) (Word, error) {
 
 	p := url.Values{}
 	p.Add("q", word)
+	p.Add("shortView", "0")
 
 	query.RawQuery = p.Encode()
 
