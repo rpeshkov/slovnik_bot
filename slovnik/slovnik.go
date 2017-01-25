@@ -68,23 +68,16 @@ func DetectLanguage(input string) string {
 	return "cs"
 }
 
+var f func(w *Word, data string)
+
 func parsePage(pageBody io.Reader) Word {
 	z := html.NewTokenizer(pageBody)
 
-	inWord := false
 	inTranslations := false
-	inTranslationLink := false
-
-	// class of span that contains wordtype
-	inMorf := false
-
 	foundSynonymsHeader := false
 	inSynonymsBlock := false
-	inSynonima := false
-
 	foundAntonymsHeader := false
 	inAntonymsBlock := false
-	inAntonima := false
 
 	w := Word{}
 	for {
@@ -98,43 +91,32 @@ func parsePage(pageBody io.Reader) Word {
 			t := z.Token()
 
 			if t.Data == "h3" {
-				for _, attr := range t.Attr {
-					if attr.Key == "lang" && (attr.Val == "cs" || attr.Val == "ru") {
-						inWord = true
-					}
+				lang := getAttr(t.Attr, "lang")
+				if lang == "cs" || lang == "ru" {
+					f = addWord
 				}
 			}
 
 			if t.Data == "div" {
-				for _, attr := range t.Attr {
-					if attr.Key == "id" && attr.Val == "fastMeanings" {
-						inTranslations = true
-					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundSynonymsHeader {
-						inSynonymsBlock = true
-					} else if attr.Key == "class" && attr.Val == "other-meaning" && foundAntonymsHeader {
-						inAntonymsBlock = true
-					}
-				}
+				inTranslations = getAttr(t.Attr, "id") == "fastMeanings"
+				inSynonymsBlock = getAttr(t.Attr, "class") == "other-meaning" && foundSynonymsHeader
+				inAntonymsBlock = getAttr(t.Attr, "class") == "other-meaning" && foundAntonymsHeader
 			}
 
-			if t.Data == "a" && inTranslations {
-				inTranslationLink = true
+			if (t.Data == "a" || t.Data == "span") && getAttr(t.Attr, "class") != "comma" && inTranslations {
+				f = addTranslation
 			}
 
 			if t.Data == "a" && inSynonymsBlock {
-				inSynonima = true
+				f = addSynonym
 			}
 
 			if t.Data == "a" && inAntonymsBlock {
-				inAntonima = true
+				f = addAntonym
 			}
 
-			if t.Data == "span" {
-				for _, attr := range t.Attr {
-					if attr.Key == "class" && attr.Val == "morf" {
-						inMorf = true
-					}
-				}
+			if t.Data == "span" && getAttr(t.Attr, "class") == "morf" {
+				f = addWordType
 			}
 
 			break
@@ -143,22 +125,6 @@ func parsePage(pageBody io.Reader) Word {
 			t := z.Token()
 			if t.Data == "div" {
 				inTranslations = false
-			}
-
-			if t.Data == "h3" {
-				inWord = false
-			}
-			if t.Data == "a" && inTranslationLink {
-				inTranslationLink = false
-			}
-			if t.Data == "a" && inSynonima {
-				inSynonima = false
-			}
-			if t.Data == "a" && inAntonima {
-				inAntonima = false
-			}
-			if t.Data == "span" && inMorf {
-				inMorf = false
 			}
 
 			if t.Data == "div" && inSynonymsBlock {
@@ -175,15 +141,9 @@ func parsePage(pageBody io.Reader) Word {
 
 		case tt == html.TextToken:
 			t := z.Token()
-			if inWord {
-				w.Word = t.Data
-			}
-			if inTranslationLink {
-				w.Translations = append(w.Translations, t.Data)
-			}
-
-			if inMorf {
-				w.WordType = t.Data
+			if f != nil {
+				f(&w, t.Data)
+				f = nil
 			}
 
 			if t.Data == "Synonyma" {
@@ -194,14 +154,36 @@ func parsePage(pageBody io.Reader) Word {
 				foundAntonymsHeader = true
 			}
 
-			if inSynonima {
-				w.Synonyms = append(w.Synonyms, t.Data)
-			}
-
-			if inAntonima {
-				w.Antonyms = append(w.Antonyms, t.Data)
-			}
 			break
 		}
 	}
+}
+
+func addWord(w *Word, data string) {
+	w.Word = data
+}
+func addWordType(w *Word, data string) {
+	w.WordType = data
+}
+
+func addTranslation(w *Word, data string) {
+	w.Translations = append(w.Translations, data)
+}
+
+func addSynonym(w *Word, data string) {
+	w.Synonyms = append(w.Synonyms, data)
+}
+
+func addAntonym(w *Word, data string) {
+	w.Antonyms = append(w.Antonyms, data)
+}
+
+func getAttr(attrs []html.Attribute, name string) string {
+	for _, a := range attrs {
+		if a.Key == name {
+			return a.Val
+		}
+	}
+
+	return ""
 }

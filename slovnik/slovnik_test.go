@@ -36,6 +36,10 @@ func TestParsePage(t *testing.T) {
 		"центра́льный",
 	}
 
+	if len(w.Translations) != len(expectedTranslations) {
+		t.Errorf("ParsePage len(translation) == %d, want %d", len(w.Translations), len(expectedTranslations))
+	}
+
 	for i, trans := range w.Translations {
 		if trans != expectedTranslations[i] {
 			t.Errorf("ParsePage translation == %q, want %q", trans, expectedTranslations[i])
@@ -77,6 +81,31 @@ func TestParsePage(t *testing.T) {
 			if antonym != expectedAntonyms[i] {
 				t.Errorf("ParsePage antonym == %q, want %q", antonym, expectedAntonyms[i])
 			}
+		}
+	}
+}
+
+func TestParseAltPage(t *testing.T) {
+	f, _ := os.Open("./sample_issue8.html")
+	w := parsePage(f)
+
+	const expectedWord = "soutěživý"
+
+	if w.Word != expectedWord {
+		t.Errorf("ParsePage word == %q, want %q", w.Word, expectedWord)
+	}
+
+	expectedTranslations := []string{
+		"состяза́тельный",
+	}
+
+	if len(w.Translations) != len(expectedTranslations) {
+		t.Errorf("ParsePage len(translation) == %d, want %d", len(w.Translations), len(expectedTranslations))
+	}
+
+	for i, trans := range w.Translations {
+		if trans != expectedTranslations[i] {
+			t.Errorf("ParsePage translation == %q, want %q", trans, expectedTranslations[i])
 		}
 	}
 }
