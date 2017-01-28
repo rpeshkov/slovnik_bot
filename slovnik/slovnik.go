@@ -78,6 +78,7 @@ func parsePage(pageBody io.Reader) Word {
 	inSynonymsBlock := false
 	foundAntonymsHeader := false
 	inAntonymsBlock := false
+	prevTag := ""
 
 	w := Word{}
 	for {
@@ -103,8 +104,18 @@ func parsePage(pageBody io.Reader) Word {
 				inAntonymsBlock = getAttr(t.Attr, "class") == "other-meaning" && foundAntonymsHeader
 			}
 
-			if (t.Data == "a" || t.Data == "span") && getAttr(t.Attr, "class") != "comma" && inTranslations {
+			if t.Data == "a" && inTranslations {
 				f = addTranslation
+			}
+
+			if t.Data == "a" && prevTag == "a" && inTranslations {
+				f = updateLastTranslation
+			}
+
+			if t.Data == "span" && inTranslations {
+				if getAttr(t.Attr, "class") != "comma" {
+					f = addTranslation
+				}
 			}
 
 			if t.Data == "a" && inSynonymsBlock {
@@ -119,6 +130,13 @@ func parsePage(pageBody io.Reader) Word {
 				f = addWordType
 			}
 
+			prevTag = t.Data
+
+			break
+
+		case tt == html.SelfClosingTagToken:
+			t := z.Token()
+			prevTag = t.Data
 			break
 
 		case tt == html.EndTagToken:
@@ -168,6 +186,14 @@ func addWordType(w *Word, data string) {
 
 func addTranslation(w *Word, data string) {
 	w.Translations = append(w.Translations, data)
+}
+
+func updateLastTranslation(w *Word, data string) {
+	if len(w.Translations) > 0 {
+		lastTranslation := w.Translations[len(w.Translations)-1]
+		lastTranslation = lastTranslation + " " + data
+		w.Translations[len(w.Translations)-1] = lastTranslation
+	}
 }
 
 func addSynonym(w *Word, data string) {
