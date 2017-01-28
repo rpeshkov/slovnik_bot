@@ -109,3 +109,31 @@ func TestParseAltPage(t *testing.T) {
 		}
 	}
 }
+
+func TestParseIssue7(t *testing.T) {
+	f, _ := os.Open("./sample_issue7.html")
+	w := parsePage(f)
+
+	const expectedWord = "protože"
+
+	if w.Word != expectedWord {
+		t.Errorf("ParsePage word == %q, want %q", w.Word, expectedWord)
+	}
+
+	expectedTranslations := []string{
+		"так как",
+		"из-за того́",
+		"потому́ что",
+	}
+
+	if len(w.Translations) != len(expectedTranslations) {
+		t.Errorf("ParsePage len(translation) == %d, want %d", len(w.Translations), len(expectedTranslations))
+		return
+	}
+
+	for i, trans := range w.Translations {
+		if trans != expectedTranslations[i] {
+			t.Errorf("ParsePage translation == %q, want %q", trans, expectedTranslations[i])
+		}
+	}
+}
