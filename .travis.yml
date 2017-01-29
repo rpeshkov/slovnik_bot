@@ -1,0 +1,8 @@
+language: go
+sudo: false
+version: 1.7
+script:
+- go get github.com/tools/godep
+- godep restore
+- go test ./slovnik -v
+- go build
